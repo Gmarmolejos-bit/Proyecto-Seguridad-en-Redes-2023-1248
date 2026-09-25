@@ -1,0 +1,175 @@
+========================================
+INTERFACES
+==========
+
+FGVMEVM11PWYOGEC # show system interface
+
+config system interface
+edit "port1"
+set vdom "root"
+set mode dhcp
+set allowaccess ping https ssh http
+set type physical
+set snmp-index 1
+next
+
+```
+edit "port2"
+    set vdom "root"
+    set ip 10.12.48.129 255.255.255.240
+    set allowaccess ping
+    set type physical
+    set alias "SERVIDORES"
+    set device-identification enable
+    set lldp-transmission enable
+    set role lan
+    set snmp-index 2
+next
+
+edit "naf.root"
+    set vdom "root"
+    set type tunnel
+    set src-check disable
+    set snmp-index 7
+next
+
+edit "l2t.root"
+    set vdom "root"
+    set type tunnel
+    set snmp-index 8
+next
+
+edit "ssl.root"
+    set vdom "root"
+    set type tunnel
+    set alias "Agentless VPN interface"
+    set snmp-index 9
+next
+
+edit "VLAN10_USUARIOS"
+    set vdom "root"
+    set ip 10.12.48.1 255.255.255.128
+    set allowaccess ping
+    set alias "USUARIOS"
+    set device-identification enable
+    set role lan
+    set snmp-index 3
+    set ip-managed-by-fortiipam disable
+    set interface "port2"
+    set vlanid 10
+next
+```
+
+end
+
+========================================
+FIREWALL POLICIES
+=================
+
+FGVMEVM11PWYOGEC # show firewall policy
+
+config firewall policy
+edit 1
+set name "USUARIOS_A_SERVIDORES"
+set uuid dc8d3786-b854-51f1-0568-0fbf1aedf7c7
+set srcintf "VLAN10_USUARIOS"
+set dstintf "port2"
+set action accept
+set srcaddr "all"
+set dstaddr "all"
+set schedule "always"
+set service "ALL"
+next
+
+```
+edit 2
+    set name "NAME_A_INTERNET"
+    set uuid 20cf9364-b858-51f1-9a9f-be784774a98c
+    set srcintf "VLAN10_USUARIOS"
+    set dstintf "port1"
+    set action accept
+    set srcaddr "all"
+    set dstaddr "all"
+    set schedule "always"
+    set service "ALL"
+    set nat enable
+next
+
+edit 3
+    set name "WAN_A_WEB_HTTPS"
+    set uuid 4d206dde-b872-51f1-0dec-bfaf47a2ca7a
+    set srcintf "port1"
+    set dstintf "port2"
+    set action accept
+    set srcaddr "all"
+    set dstaddr "VIP_WEB_HTTPS"
+    set schedule "always"
+    set service "ALL"
+next
+```
+
+end
+
+========================================
+VIRTUAL IP
+==========
+
+FGVMEVM11PWYOGEC # show firewall vip
+
+config firewall vip
+edit "VIP_WEB_HTTPS"
+set uuid c12fc608-b871-51f1-dab9-dc2e01628789
+set extip 192.168.153.133
+set mappedip "10.12.48.130"
+set extintf "port1"
+set portforward enable
+set extport 8443
+set mappedport 443
+next
+end
+
+========================================
+DHCP
+====
+
+FGVMEVM11PWYOGEC # show system dhcp server
+
+config system dhcp server
+edit 1
+set dns-service default
+set default-gateway 10.12.48.1
+set netmask 255.255.255.128
+set interface "VLAN10_USUARIOS"
+
+```
+    config ip-range
+        edit 1
+            set start-ip 10.12.48.2
+            set end-ip 10.12.48.126
+        next
+    end
+next
+```
+
+end
+
+========================================
+ROUTING TABLE
+=============
+
+FGVMEVM11PWYOGEC # get router info routing-table all
+
+Codes: K - kernel, C - connected, S - static, R - RIP, B - BGP
+O - OSPF, IA - OSPF inter area
+N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+E1 - OSPF external type 1, E2 - OSPF external type 2
+i - IS-IS, L1 - IS-IS level-1, L2 - IS-IS level-2, ia - IS-IS inter area
+V - BGP VPNv4
+* - candidate default
+
+Routing table for VRF=0
+
+S*      0.0.0.0/0 [5/0] via 192.168.153.2, port1, [1/0]
+C       10.12.48.0/25 is directly connected, VLAN10_USUARIOS
+C       10.12.48.128/28 is directly connected, port2
+C       192.168.153.0/24 is directly connected, port1
