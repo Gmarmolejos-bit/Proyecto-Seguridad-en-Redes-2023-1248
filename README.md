@@ -27,6 +27,27 @@ La red está compuesta por varios dispositivos, cada uno con una función espec�
 
 La verdad es que esta parte fue una de las más importantes del proyecto, porque prácticamente todo depende de que las conexiones entre estos equipos estén correctamente organizadas.
 
+### Diagrama lógico de la red
+
+```mermaid
+flowchart TD
+    NAT[NAT de GNS3]
+    HUB[Hub]
+    FG[FortiGate]
+    SW[SW-01]
+    PC[PC-USUARIO - VLAN 10]
+    WEB[WEB-SERVER - VLAN 20]
+    DB[DB-SERVER - VLAN 20]
+
+    NAT --> HUB
+    HUB --> FG
+    FG -->|Trunk 802.1Q| SW
+    SW -->|VLAN 10| PC
+    SW -->|VLAN 20| WEB
+    SW -->|VLAN 20| DB
+    WEB -->|MariaDB TCP 3306| DB
+```
+
 ## Redes utilizadas
 
 Para separar los dispositivos utilicé dos redes principales:
